@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package put.ai.games.naiveplayer;
+package put.ai.games.newplayer;
 
 import java.io.*;
 import java.util.List;
@@ -11,14 +11,14 @@ import put.ai.games.game.Board;
 import put.ai.games.game.Move;
 import put.ai.games.game.Player;
 
-public class NaivePlayer extends Player {
+public class NewPlayer extends Player {
 
     private Random random = new Random(0xdeadbeef);
 
 
     @Override
     public String getName() {
-        return "Gracz Naiwny 84868";
+        return "Natalia Szymczyk Jan Swiatek";
     }
 
 

@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package put.ai.games.naiveplayer;
+package put.ai.games.newplayer;
 
 import put.ai.games.game.Board;
 import put.ai.games.game.Move;

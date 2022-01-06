@@ -31,7 +31,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>put.ai.games.naiveplayer.NullPlayer</mainClass>
+                            <mainClass>put.ai.games.newplayer.NullPlayer</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
