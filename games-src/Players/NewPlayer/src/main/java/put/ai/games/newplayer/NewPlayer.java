@@ -19,7 +19,6 @@ public class NewPlayer extends Player {
         MAX, MIN
     }
 
-
     @Override
     public String getName() {
         return "Natalia Szymczyk 145250 Jan Swiatek 145390";
@@ -30,25 +29,28 @@ public class NewPlayer extends Player {
     public Move nextMove(Board b) {
         List<Move> moves = b.getMovesFor(getColor());
 
-        PrintWriter writer = null;
-        try {
-            writer = new PrintWriter(String.format("./logs/log%d.txt", numberOfMove++), "UTF-8");
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-        writer.println(moves.size());
+//        PrintWriter writer = null;
+//        try {
+//            writer = new PrintWriter(String.format("./logs/log%d.txt", numberOfMove++), "UTF-8");
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        } catch (UnsupportedEncodingException e) {
+//            e.printStackTrace();
+//        }
+//        writer.println(moves.size());
 
-        Object[] move = minmax(b, 3, Type.MAX);
+        Object[] move = AlphaBeta(b, 3, Integer.MIN_VALUE, Integer.MAX_VALUE, Type.MAX);
 
-        writer.println("wybrany ruch: " + move[1].toString() + " ocena: " + move[0].toString());
-        writer.close();
+//        writer.println("wybrany ruch: " + move[1].toString() + " ocena: " + move[0].toString());
+//        writer.close();
 
         return (Move) move[1];
     }
 
-    private Object[] minmax(Board board, int depth, Type type){
+    private Object[] AlphaBeta(Board board, int depth, int alpha, int beta, Type type){
+//        TODO Ograniczenie na czas
+//        TODO Lepsza ocena heurystyczna
+
         Color color;
 
         if(type == Type.MAX)
@@ -72,42 +74,51 @@ public class NewPlayer extends Player {
         }
 
         if(type == Type.MAX) {
-            int bestValue = Integer.MIN_VALUE;
             Move bestMove = null;
 
             for(Move childMove : moves){
                 board.doMove(childMove);
-                Object[] result = minmax(board, depth - 1, Type.MIN);
+                Object[] result = AlphaBeta(board, depth - 1, alpha, beta, Type.MIN);
                 int val = (int) result[0];
                 board.undoMove(childMove);
 
-                if(val > bestValue){
-                    bestValue = val;
+                if(val > alpha){
+                    alpha = val;
                     bestMove = childMove;
+                }
+
+                if (alpha >= beta){
+                    assert bestMove != null;
+                    return new Object[] {beta, bestMove};
                 }
             }
 
             assert bestMove != null;
-            return new Object[] {bestValue, bestMove};
+            return new Object[] {alpha, bestMove};
         }
         else{
-            int bestValue = Integer.MAX_VALUE;
+//            int bestValue = Integer.MAX_VALUE;
             Move bestMove = null;
 
             for(Move childMove : moves){
                 board.doMove(childMove);
-                Object[] result = minmax(board, depth - 1, Type.MIN);
+                Object[] result = AlphaBeta(board, depth - 1, alpha, beta, Type.MAX);
                 int val = (int) result[0];
                 board.undoMove(childMove);
 
-                if(val < bestValue){
-                    bestValue = val;
+                if(val < beta){
+                    beta = val;
                     bestMove = childMove;
+                }
+
+                if (alpha >= beta){
+                    assert bestMove != null;
+                    return new Object[] {alpha, bestMove};
                 }
             }
 
             assert bestMove != null;
-            return new Object[] {bestValue, bestMove};
+            return new Object[] {beta, bestMove};
         }
     }
 
