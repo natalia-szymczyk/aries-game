@@ -15,6 +15,10 @@ public class NewPlayer extends Player {
 
     private int numberOfMove = 0;
 
+    public enum Type {
+        MAX, MIN
+    }
+
 
     @Override
     public String getName() {
@@ -36,8 +40,7 @@ public class NewPlayer extends Player {
         }
         writer.println(moves.size());
 
-        Object[] move = AlphaBeta(b, 3, Double.NEGATIVE_INFINITY,
-                Double.POSITIVE_INFINITY, true, writer);
+        Object[] move = minmax(b, 3, Type.MAX);
 
         writer.println("wybrany ruch: " + move[1].toString() + " ocena: " + move[0].toString());
         writer.close();
@@ -45,119 +48,67 @@ public class NewPlayer extends Player {
         return (Move) move[1];
     }
 
-    double evaluate(Board board, Move move) {
-        return (board.getWinner(move.getColor()) == move.getColor() ? 100 : 0) + calculateProfitability(board, move) * 10;
-    }
-
-    Object[] AlphaBeta(Board board, int depth, double alpha, double beta, boolean maximizing, PrintWriter writer) {
+    private Object[] minmax(Board board, int depth, Type type){
         Color color;
 
-        if (maximizing){
+        if(type == Type.MAX)
             color = this.getColor();
-        }
-        else {
-            color = this.getOpponent();
-        }
+        else
+            color = getOpponent(this.getColor());
 
-        List<Move> availableMoves = board.getMovesFor(color);
+        List<Move> moves = board.getMovesFor(color);
 
-        double bestScore;
-        double valScore;
-        Object[] val;
-        Move bestMove = calculateBestMove(board, availableMoves);
-
-        // evaluate at leaf
-        if (depth == 0) {
-            return new Object[]{ evaluate(board, bestMove), bestMove};
+        if(depth == 0 || moves.isEmpty()){
+            return new Object[] {calculateDifference(board), null};
         }
 
-        if (maximizing){
-            bestScore = alpha;
-            for (int child = 1; child <= availableMoves.size(); child++){
-                Board newBoard = board.clone();
-                Move newMove = bestMove;
-                newBoard.doMove(newMove);
-                val = AlphaBeta(newBoard, depth - 1, alpha, beta, !maximizing, writer);
-                valScore = (double) val[0];
+        Color winningColor = board.getWinner(getOpponent(color));
 
-                if (valScore > alpha) {
-                    bestScore = valScore;
-                    bestMove = newMove;
-                }
+        if(winningColor == this.getColor()){
+            return new Object[] {Integer.MAX_VALUE, null};
+        }
+        else if(winningColor == getOpponent(this.getColor())){
+            return new Object[] {Integer.MIN_VALUE, null};
+        }
 
-                if (alpha >= beta){
-                    return new Object[]{beta, bestMove };
+        if(type == Type.MAX) {
+            int bestValue = Integer.MIN_VALUE;
+            Move bestMove = null;
+
+            for(Move childMove : moves){
+                board.doMove(childMove);
+                Object[] result = minmax(board, depth - 1, Type.MIN);
+                int val = (int) result[0];
+                board.undoMove(childMove);
+
+                if(val > bestValue){
+                    bestValue = val;
+                    bestMove = childMove;
                 }
             }
-        }
-        else {
-            bestScore = beta;
-            for (int child = 1; child <= availableMoves.size(); child++){
-                Board newBoard = board.clone();
-                Move newMove = availableMoves.get(0);
-                newBoard.doMove(newMove);
-                val = AlphaBeta(newBoard, depth - 1, alpha, beta, maximizing, writer);
-                valScore = (double) val[0];
 
-                if (valScore < beta) {
-                    bestScore = valScore;
-                    bestMove = newMove;
+            assert bestMove != null;
+            return new Object[] {bestValue, bestMove};
+        }
+        else{
+            int bestValue = Integer.MAX_VALUE;
+            Move bestMove = null;
+
+            for(Move childMove : moves){
+                board.doMove(childMove);
+                Object[] result = minmax(board, depth - 1, Type.MIN);
+                int val = (int) result[0];
+                board.undoMove(childMove);
+
+                if(val < bestValue){
+                    bestValue = val;
+                    bestMove = childMove;
                 }
-
-                if (alpha >= beta) {
-                    return new Object[]{alpha, bestMove};
-                }
-            }
-        }
-
-        return new Object[]{ bestScore, bestMove};
-    }
-
-    Object[] AlphaBeta2(Board board, int depth, double alpha, double beta, boolean maximizing) {
-        Color color;
-
-        if (maximizing){
-            color = this.getColor();
-        }
-        else {
-            color = this.getOpponent();
-        }
-
-        List<Move> availableMoves = board.getMovesFor(color);
-
-        double bestScore;
-        Object[] temp;
-        double tempScore;
-        Move bestMove = null;
-
-        // evaluate at leaf
-        if (depth == 0) {
-            return new Object[]{ evaluate(board, bestMove), availableMoves.get(0) };
-        }
-
-        bestScore = alpha;
-
-        while (availableMoves.size() > 0) {
-            Board newBoard = board.clone();
-            Move newMove = availableMoves.get(0);
-            newBoard.doMove(newMove);
-            temp = AlphaBeta2(newBoard, depth - 1, -beta, -bestScore, !maximizing);
-
-            tempScore = -(double) temp[0];
-
-            if (tempScore > bestScore) {
-                bestScore = tempScore;
-                bestMove = newMove;
             }
 
-            if (bestScore > beta) {
-                return new Object[]{ bestScore, bestMove };
-            }
-
-            availableMoves.remove(0);
+            assert bestMove != null;
+            return new Object[] {bestValue, bestMove};
         }
-
-        return new Object[]{ bestScore, bestMove };
     }
 
     public void writeAllMoves(PrintWriter writer, List<Move> moves){
@@ -204,7 +155,6 @@ public class NewPlayer extends Player {
         for (int i = 0; i < size; i++){
             for (int j = 0; j < size; j++){
                 if (b.getState(i, j) == Color.EMPTY){
-                    ;
                 }
                 else if (b.getState(i, j) == this.getColor()){
                     ourPawns += 1;
@@ -218,16 +168,16 @@ public class NewPlayer extends Player {
         return ourPawns - enemiesPawns;
     }
 
-    public Color getOpponent() {
-        switch (this.getColor()) {
-            case PLAYER1:
-                return Color.PLAYER2;
-            case PLAYER2:
-                return Color.PLAYER1;
-            default:
-                throw new IllegalArgumentException("Color must be well defined");
-        }
-    }
+//    public Color getOpponent() {
+//        switch (this.getColor()) {
+//            case PLAYER1:
+//                return Color.PLAYER2;
+//            case PLAYER2:
+//                return Color.PLAYER1;
+//            default:
+//                throw new IllegalArgumentException("Color must be well defined");
+//        }
+//    }
 }
 
 class moveRate {
