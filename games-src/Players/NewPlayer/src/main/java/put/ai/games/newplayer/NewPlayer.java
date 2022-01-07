@@ -6,10 +6,12 @@ package put.ai.games.newplayer;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import put.ai.games.game.Board;
 import put.ai.games.game.Move;
 import put.ai.games.game.Player;
+import put.ai.games.game.moves.MoveMove;
 
 public class NewPlayer extends Player {
 
@@ -28,28 +30,31 @@ public class NewPlayer extends Player {
     @Override
     public Move nextMove(Board b) {
         List<Move> moves = b.getMovesFor(getColor());
+        List<MoveMove> moveMoves = moves.stream().map(move -> (MoveMove) move).collect(Collectors.toList());
 
-//        PrintWriter writer = null;
-//        try {
-//            writer = new PrintWriter(String.format("./logs/log%d.txt", numberOfMove++), "UTF-8");
-//        } catch (FileNotFoundException e) {
-//            e.printStackTrace();
-//        } catch (UnsupportedEncodingException e) {
-//            e.printStackTrace();
-//        }
+        PrintWriter writer = null;
+        try {
+            writer = new PrintWriter(String.format("./logs/log%d.txt", numberOfMove++), "UTF-8");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
 //        writer.println(moves.size());
 
-        Object[] move = AlphaBeta(b, 3, Integer.MIN_VALUE, Integer.MAX_VALUE, Type.MAX);
+        Object[] move = AlphaBeta(b, 3, Integer.MIN_VALUE, Integer.MAX_VALUE, Type.MAX, writer);
 
 //        writer.println("wybrany ruch: " + move[1].toString() + " ocena: " + move[0].toString());
-//        writer.close();
+        writer.close();
 
         return (Move) move[1];
     }
 
-    private Object[] AlphaBeta(Board board, int depth, int alpha, int beta, Type type){
-//        TODO Ograniczenie na czas
-//        TODO Lepsza ocena heurystyczna
+    private Object[] AlphaBeta(Board board, int depth, int alpha, int beta, Type type, PrintWriter writer){
+//        TODO Ograniczenie na czas (system.get time => itp)
+//        TODO Lepsza ocena heurystyczna (ocena kazdego pola odleglosc od pukntu koncowego )
+//        TODO karac za bliskosc baranka przy celu! zeby zbijac baranki przy jego celu
+//        TODO jak on jest 5,5 a cel 7,7 to dodaje 25
 
         Color color;
 
@@ -61,7 +66,7 @@ public class NewPlayer extends Player {
         List<Move> moves = board.getMovesFor(color);
 
         if(depth == 0 || moves.isEmpty()){
-            return new Object[] {calculateDifference(board), null};
+            return new Object[] {calculateHeuristicRate(board, writer), null};
         }
 
         Color winningColor = board.getWinner(getOpponent(color));
@@ -78,7 +83,7 @@ public class NewPlayer extends Player {
 
             for(Move childMove : moves){
                 board.doMove(childMove);
-                Object[] result = AlphaBeta(board, depth - 1, alpha, beta, Type.MIN);
+                Object[] result = AlphaBeta(board, depth - 1, alpha, beta, Type.MIN, writer);
                 int val = (int) result[0];
                 board.undoMove(childMove);
 
@@ -97,12 +102,11 @@ public class NewPlayer extends Player {
             return new Object[] {alpha, bestMove};
         }
         else{
-//            int bestValue = Integer.MAX_VALUE;
             Move bestMove = null;
 
             for(Move childMove : moves){
                 board.doMove(childMove);
-                Object[] result = AlphaBeta(board, depth - 1, alpha, beta, Type.MAX);
+                Object[] result = AlphaBeta(board, depth - 1, alpha, beta, Type.MAX, writer);
                 int val = (int) result[0];
                 board.undoMove(childMove);
 
@@ -120,6 +124,48 @@ public class NewPlayer extends Player {
             assert bestMove != null;
             return new Object[] {beta, bestMove};
         }
+    }
+
+    public int calculateHeuristicRate(Board board, PrintWriter writer) {
+        writer.println("diff: " + calculateDifference(board));
+        writer.println("fields: " + calculateFields(board, writer));
+        return 100 * calculateDifference(board) - calculateFields(board, writer);
+    }
+
+    public int calculateFields(Board board, PrintWriter writer) {
+        int sum = 0;
+        int distance;
+        Field myTarget = calculateTargetField(board, getColor());
+        Field enemyTarget = calculateTargetField(board, getOpponent(getColor()));
+        Field tmpField;
+        writer.println("target: " + myTarget.x + " " + myTarget.y);
+
+        for(int i = 0; i < board.getSize(); i++){
+            for(int j = 0; j < board.getSize(); j++){
+                if(board.getState(i, j) == getColor()){
+                    tmpField = new Field(i, j);
+                    distance = calculateDistanceToTarget(tmpField, myTarget);
+                    sum += distance;
+                    writer.println("pole: " + i + " " + j + " distance: " + calculateDistanceToTarget(tmpField, myTarget));
+                }
+            }
+        }
+        writer.println("sum: " + sum);
+
+        return sum;
+    }
+
+    public Field calculateTargetField(Board board, Color color){
+        if (color == Color.PLAYER2){
+            return new Field(0, 0);
+        }
+        else{
+            return new Field(board.getSize() - 1, board.getSize() - 1);
+        }
+    }
+
+    public int calculateDistanceToTarget(Field field, Field target){
+        return Math.abs(field.x - target.x) * Math.abs(field.y - target.y);
     }
 
     public void writeAllMoves(PrintWriter writer, List<Move> moves){
@@ -191,12 +237,13 @@ public class NewPlayer extends Player {
 //    }
 }
 
-class moveRate {
-    public int rate;
-    public Move move;
+class Field {
+    public int x;
+    public int y;
+    public Player.Color color;
 
-    public moveRate(int rate, Move move) {
-        this.rate = rate;
-        this.move = move;
+    public Field(int x, int y) {
+        this.x = x;
+        this.y = y;
     }
 }
