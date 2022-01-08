@@ -1,10 +1,12 @@
 package put.ai.games.newplayer;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import put.ai.games.game.Board;
 import put.ai.games.game.Move;
 import put.ai.games.game.Player;
+import put.ai.games.game.moves.MoveMove;
 
 public class NewPlayer extends Player {
 
@@ -13,6 +15,7 @@ public class NewPlayer extends Player {
     }
 
     private long start;
+    private int numberOfMove = 0;
 
     @Override
     public String getName() {
@@ -24,7 +27,29 @@ public class NewPlayer extends Player {
     public Move nextMove(Board board) {
         start = System.currentTimeMillis();
 
+        List<Move> moves = board.getMovesFor(getColor());
+        List<MoveMove> moveMoves = moves.stream().map(move -> (MoveMove) move).collect(Collectors.toList());
+
+//        PrintWriter writer = null;
+//        try {
+//            writer = new PrintWriter(String.format("./logs/log%d.txt", numberOfMove++), "UTF-8");
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        } catch (UnsupportedEncodingException e) {
+//            e.printStackTrace();
+//        }
+
+//        writer.println(moves.size());
+//        writer.println(moveMoves.size());
+
+//        for (MoveMove move : moveMoves){
+//            writer.println(move.getDstX() + move.getDstY());
+//        }
+
         ratedMove bestMove = AlphaBeta(board, 3, Integer.MIN_VALUE, Integer.MAX_VALUE, Type.MAX);
+
+//        writer.println("wybrany ruch: " + bestMove.getMove().toString() + " ocena: " + bestMove.getValue());
+//        writer.close();
 
         return bestMove.getMove();
     }
@@ -35,6 +60,13 @@ public class NewPlayer extends Player {
         Color color = (type == Type.MAX) ? this.getColor() : getOpponent(this.getColor());
 
         List<Move> moves = board.getMovesFor(color);
+        List<MoveMove> moveMoves = moves.stream().map(move -> (MoveMove) move).collect(Collectors.toList());
+        sortMoves(board, moveMoves);
+
+//        if(numberOfMove < 10){
+//            sortMoves(board, moveMoves);
+//        }
+
 
         if(depth == 0 || moves.isEmpty() || timeLimit()){
             return new ratedMove(calculateHeuristicRate(board), null);
@@ -51,7 +83,7 @@ public class NewPlayer extends Player {
 
         Move bestMove = null;
         if(type == Type.MAX) {
-            for(Move childMove : moves){
+            for(Move childMove : moveMoves){
                 board.doMove(childMove);
                 ratedMove result = AlphaBeta(board, depth - 1, alpha, beta, Type.MIN);
                 int val = result.getValue();
@@ -72,7 +104,7 @@ public class NewPlayer extends Player {
             return new ratedMove(alpha, bestMove);
         }
         else{
-            for(Move childMove : moves){
+            for(Move childMove : moveMoves){
                 board.doMove(childMove);
                 ratedMove result = AlphaBeta(board, depth - 1, alpha, beta, Type.MAX);
                 int val = result.getValue();
@@ -95,8 +127,45 @@ public class NewPlayer extends Player {
     }
 
 
+    private void sortMoves(Board board, List<MoveMove> moves){
+        Field starting = calculateStartingField(board, moves.get(0).getColor());
+        moves.sort(Comparator.comparingInt((MoveMove a) -> calculateDistanceToTarget(a, starting)));
+
+        //        PrintWriter writer = null;
+//        try {
+//            writer = new PrintWriter(String.format("./logs/log%d.txt", numberOfMove++), "UTF-8");
+////            writer = new PrintWriter("./logs/log.txt", "UTF-8");
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        } catch (UnsupportedEncodingException e) {
+//            e.printStackTrace();
+//        }
+//
+//        writer.println("size: " + moves.size());
+//        writer.println("color: " + moves.get(0).getColor());
+//        writer.println("starting" + calculateStartingField(board, moves.get(0).getColor()).getX() + calculateStartingField(board, moves.get(0).getColor()).getY());
+
+
+//        for (MoveMove move : moves){
+//            writer.println(move.getDstX() + " " + move.getDstY() + "distance: " + calculateDistanceToTarget(move, starting));
+//        }
+
+
+//        for (MoveMove move : moves){
+//            writer.println(move.getDstX() + " " + move.getDstY() + "distance: " + calculateDistanceToTarget(move, starting));
+//        }
+//
+//        writer.close();
+    }
+
+    private int calculateDistanceToTarget(MoveMove move, Field target){
+//        todo +1 i iloczyn
+        return Math.abs(move.getDstX() - target.getX()) + Math.abs(move.getDstY() - target.getY());
+    }
+
+
     private boolean timeLimit(){
-        return (System.currentTimeMillis() > getTime() + start - 200);
+        return (System.currentTimeMillis() > getTime() + start - 100);
     }
 
 
