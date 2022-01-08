@@ -24,7 +24,7 @@ public class NewPlayer extends Player {
     public Move nextMove(Board board) {
         start = System.currentTimeMillis();
 
-        ratedMove bestMove = AlphaBeta(board, 2, Integer.MIN_VALUE, Integer.MAX_VALUE, Type.MAX);
+        ratedMove bestMove = AlphaBeta(board, 3, Integer.MIN_VALUE, Integer.MAX_VALUE, Type.MAX);
 
         return bestMove.getMove();
     }
