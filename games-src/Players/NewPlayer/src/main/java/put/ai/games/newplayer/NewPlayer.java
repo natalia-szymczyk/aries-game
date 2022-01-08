@@ -8,10 +8,11 @@ import put.ai.games.game.Player;
 
 public class NewPlayer extends Player {
 
-    public enum Type {
+    private enum Type {
         MAX, MIN
     }
 
+    private long start;
 
     @Override
     public String getName() {
@@ -21,21 +22,21 @@ public class NewPlayer extends Player {
 
     @Override
     public Move nextMove(Board board) {
+        start = System.currentTimeMillis();
 
-        ratedMove bestMove = AlphaBeta(board, 3, Integer.MIN_VALUE, Integer.MAX_VALUE, Type.MAX);
+        ratedMove bestMove = AlphaBeta(board, 2, Integer.MIN_VALUE, Integer.MAX_VALUE, Type.MAX);
 
         return bestMove.getMove();
     }
 
 
     private ratedMove AlphaBeta(Board board, int depth, int alpha, int beta, Type type){
-//        TODO Ograniczenie na czas (system.get time => itp)
 
         Color color = (type == Type.MAX) ? this.getColor() : getOpponent(this.getColor());
 
         List<Move> moves = board.getMovesFor(color);
 
-        if(depth == 0 || moves.isEmpty()){
+        if(depth == 0 || moves.isEmpty() || timeLimit()){
             return new ratedMove(calculateHeuristicRate(board), null);
         }
 
@@ -94,13 +95,18 @@ public class NewPlayer extends Player {
     }
 
 
-    public int calculateHeuristicRate(Board board) {
+    private boolean timeLimit(){
+        return (System.currentTimeMillis() > getTime() + start - 200);
+    }
+
+
+    private int calculateHeuristicRate(Board board) {
 //        TODO popatrzec na rozne kombinacje
         return 100 * calculateDifference(board) + calculateFields(board);
     }
 
 
-    public int calculateFields(Board board) {
+    private int calculateFields(Board board) {
         int sum = 0;
         int distance;
         Field myStartingField = calculateStartingField(board, getColor());
@@ -119,17 +125,17 @@ public class NewPlayer extends Player {
     }
 
 
-    public Field calculateStartingField(Board board, Color color){
+    private Field calculateStartingField(Board board, Color color){
         return (color == Color.PLAYER1) ? new Field(0, 0) : new Field(board.getSize() - 1, board.getSize() - 1);
     }
 
 
-    public int calculateDistanceBetweenFields(Field field, Field target){
+    private int calculateDistanceBetweenFields(Field field, Field target){
         return Math.abs(field.getX() - target.getX()) * Math.abs(field.getY() - target.getY());
     }
 
 
-    public int calculateDifference(Board b){
+    private int calculateDifference(Board b){
         int size = b.getSize();
         int difference = 0;
 
