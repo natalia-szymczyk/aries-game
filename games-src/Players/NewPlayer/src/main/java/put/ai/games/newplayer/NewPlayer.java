@@ -127,32 +127,46 @@ public class NewPlayer extends Player {
     }
 
     public int calculateHeuristicRate(Board board, PrintWriter writer) {
-        writer.println("diff: " + calculateDifference(board));
         writer.println("fields: " + calculateFields(board, writer));
+        writer.println("diff: " + calculateDifference(board));
+        writer.println("rate: " + (100 * calculateDifference(board) - calculateFields(board, writer)));
         return 100 * calculateDifference(board) - calculateFields(board, writer);
     }
 
     public int calculateFields(Board board, PrintWriter writer) {
         int sum = 0;
         int distance;
-        Field myTarget = calculateTargetField(board, getColor());
-        Field enemyTarget = calculateTargetField(board, getOpponent(getColor()));
+        Field myStartingField = calculateStartingField(board, getColor());
         Field tmpField;
-        writer.println("target: " + myTarget.x + " " + myTarget.y);
+        writer.println("starting: " + myStartingField.x + " " + myStartingField.y);
 
         for(int i = 0; i < board.getSize(); i++){
             for(int j = 0; j < board.getSize(); j++){
                 if(board.getState(i, j) == getColor()){
                     tmpField = new Field(i, j);
-                    distance = calculateDistanceToTarget(tmpField, myTarget);
+                    distance = calculateDistanceBetweenFields(tmpField, myStartingField);
                     sum += distance;
-                    writer.println("pole: " + i + " " + j + " distance: " + calculateDistanceToTarget(tmpField, myTarget));
+                    writer.println("MOJ: pole: " + i + " " + j + " distance: " + calculateDistanceBetweenFields(tmpField, myStartingField));
+                }
+                else if(board.getState(i, j) == getOpponent(this.getColor())){
+                    tmpField = new Field(i, j);
+                    distance = calculateDistanceBetweenFields(tmpField, myStartingField);
+                    sum -= distance;
+                    writer.println("JEGO: pole: " + i + " " + j + " distance: " + calculateDistanceBetweenFields(tmpField, myStartingField));
                 }
             }
         }
-        writer.println("sum: " + sum);
 
         return sum;
+    }
+
+    public Field calculateStartingField(Board board, Color color){
+        if (color == Color.PLAYER1){
+            return new Field(0, 0);
+        }
+        else{
+            return new Field(board.getSize() - 1, board.getSize() - 1);
+        }
     }
 
     public Field calculateTargetField(Board board, Color color){
@@ -164,7 +178,7 @@ public class NewPlayer extends Player {
         }
     }
 
-    public int calculateDistanceToTarget(Field field, Field target){
+    public int calculateDistanceBetweenFields(Field field, Field target){
         return Math.abs(field.x - target.x) * Math.abs(field.y - target.y);
     }
 
